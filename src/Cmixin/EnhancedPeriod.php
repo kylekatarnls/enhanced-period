@@ -14,10 +14,10 @@ use Spatie\Period\Precision;
 trait EnhancedPeriod
 {
     private static $maskUnits = [
-        'year' => Precision::YEAR,
-        'month' => Precision::MONTH,
-        'day' => Precision::DAY,
-        'hour' => Precision::HOUR,
+        'year'   => Precision::YEAR,
+        'month'  => Precision::MONTH,
+        'day'    => Precision::DAY,
+        'hour'   => Precision::HOUR,
         'minute' => Precision::MINUTE,
         'second' => Precision::SECOND,
     ];
