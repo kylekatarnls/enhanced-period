@@ -25,7 +25,7 @@ composer require cmixin/enhanced-period
 use Carbon\CarbonPeriod;
 use Cmixin\EnhancedPeriod;
 
-CarbonPeriod::mixin(EnhancedPeriod::class);
+CarbonPeriod::mixin(EnhancedPeriod::class); // This line is not needed if you use Laravel default auto-discovery.
 
 // Use toEnhancedPeriod to convert `Carbon\CarbonPeriod` objects to `Spatie\Period\Period` ones
 $period1 = CarbonPeriod::hours()
