@@ -1,6 +1,6 @@
 # enhanced-period
 
-Carbon mixin to convert `Carbon\CarbonPeriod` to `Spatie\Period\Period` and vice versa.
+[Carbon](https://carbon.nesbot.com/) mixin to convert `Carbon\CarbonPeriod` to `Spatie\Period\Period` and vice versa.
 
 [![Latest Stable Version](https://poser.pugx.org/cmixin/enhanced-period/v/stable.png)](https://packagist.org/packages/cmixin/enhanced-period)
 [![Build Status](https://travis-ci.org/kylekatarnls/enhanced-period.svg?branch=master)](https://travis-ci.org/kylekatarnls/enhanced-period)
