@@ -5,6 +5,7 @@ namespace Cmixin;
 use Carbon\CarbonInterval;
 use Carbon\CarbonPeriod;
 use DateInterval;
+use Generator;
 use RuntimeException;
 use Spatie\Period\Boundaries;
 use Spatie\Period\Period;
@@ -12,6 +13,15 @@ use Spatie\Period\Precision;
 
 trait EnhancedPeriod
 {
+    private static $maskUnits = [
+        'year' => Precision::YEAR,
+        'month' => Precision::MONTH,
+        'day' => Precision::DAY,
+        'hour' => Precision::HOUR,
+        'minute' => Precision::MINUTE,
+        'second' => Precision::SECOND,
+    ];
+
     public function toEnhancedPeriod(): Period
     {
         $mask = static::convertDateIntervalToPrecisionMask($this->getDateInterval());
@@ -40,7 +50,7 @@ trait EnhancedPeriod
         );
     }
 
-    public static function convertDateIntervalToPrecisionMask(DateInterval $interval): int
+    private static function getIntervalUnits(DateInterval $interval): Generator
     {
         $intervals = [];
         [
@@ -50,15 +60,23 @@ trait EnhancedPeriod
             $intervals[Precision::HOUR],
             $intervals[Precision::MINUTE],
             $intervals[Precision::SECOND],
-        ] = explode(' ', CarbonInterval::instance($interval)->format('%y %m %d %h %i %s'));
+        ] = array_map('intval', explode(' ', CarbonInterval::instance($interval)
+            ->format('%y %m %d %h %i %s')));
         $mask = null;
 
         foreach ($intervals as $unit => $quantity) {
-            if ($quantity === '0') {
-                continue;
+            if ($quantity !== 0) {
+                yield $unit => $quantity;
             }
+        }
+    }
 
-            if ($quantity !== '1' || $mask) {
+    public static function convertDateIntervalToPrecisionMask(DateInterval $interval): int
+    {
+        $mask = null;
+
+        foreach (self::getIntervalUnits($interval) as $unit => $quantity) {
+            if ($quantity !== 1 || $mask) {
                 throw new RuntimeException(
                     'Only periods with 1 year, 1 month, 1 day, 1 hour, 1 minute or 1 second interval can be'.
                     ' converted to '.Period::class
@@ -73,19 +91,10 @@ trait EnhancedPeriod
 
     public static function convertPrecisionMaskToDateInterval(int $precisionMask): CarbonInterval
     {
-        switch ($precisionMask) {
-            case Precision::YEAR:
-                return CarbonInterval::year();
-            case Precision::MONTH:
-                return CarbonInterval::month();
-            case Precision::DAY:
-                return CarbonInterval::day();
-            case Precision::HOUR:
-                return CarbonInterval::hour();
-            case Precision::MINUTE:
-                return CarbonInterval::minute();
-            case Precision::SECOND:
-                return CarbonInterval::second();
+        foreach (self::$maskUnits as $method => $mask) {
+            if ($precisionMask === $mask) {
+                return CarbonInterval::$method();
+            }
         }
 
         return CarbonInterval::day();
