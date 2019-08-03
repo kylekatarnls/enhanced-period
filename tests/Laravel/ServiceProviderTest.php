@@ -2,9 +2,10 @@
 
 namespace Tests\Carbon\Laravel;
 
+use Carbon\CarbonPeriod;
 use EnhancedPeriod\Laravel\ServiceProvider;
-use Carbon\Carbon;
 use PHPUnit\Framework\TestCase;
+use Spatie\Period\Period;
 
 class ServiceProviderTest extends TestCase
 {
@@ -14,20 +15,19 @@ class ServiceProviderTest extends TestCase
         $service = new ServiceProvider();
         $message = null;
 
-        Carbon::macro('isHoliday', null);
+        CarbonPeriod::macro('toEnhancedPeriod', null);
 
         try {
-            Carbon::parse('2019-04-08')->isHoliday();
+            CarbonPeriod::create('2019-04-08', '2019-04-14')->toEnhancedPeriod();
         } catch (\BadMethodCallException $e) {
             $message = $e->getMessage();
         }
 
-        $this->assertSame('Method isHoliday does not exist.', $message);
+        $this->assertSame('Method toEnhancedPeriod does not exist.', $message);
 
         $service->boot();
 
-        $this->assertFalse(Carbon::parse('2019-04-08')->isHoliday());
-        $this->assertSame('08:00', Carbon::parse('2019-04-08')->nextOpen()->format('H:i'));
+        $this->assertInstanceOf(Period::class, CarbonPeriod::create('2019-04-08', '2019-04-14')->toEnhancedPeriod());
 
         $this->assertNull($service->register());
     }
