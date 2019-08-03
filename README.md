@@ -35,7 +35,7 @@ $period1 = CarbonPeriod::hours()
 
 $period2 = CarbonPeriod::hours()
     ->since('2019-09-01 10:00')
-    ->until('2019-09-01 18:0')
+    ->until('2019-09-01 18:00')
     ->toEnhancedPeriod();
 
 foreach ($period1->overlap($period2) as $period) {
