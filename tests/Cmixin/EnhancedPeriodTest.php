@@ -6,6 +6,9 @@ use Carbon\Carbon;
 use Carbon\CarbonInterval;
 use Carbon\CarbonPeriod;
 use Cmixin\EnhancedPeriod;
+use DateInterval;
+use DatePeriod;
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Spatie\Period\Period;
@@ -20,6 +23,27 @@ class EnhancedPeriodTest extends TestCase
     {
         CarbonPeriod::mixin(EnhancedPeriod::class);
         Carbon::mixin(EnhancedPeriod::class);
+    }
+
+    public function testReadmeExample()
+    {
+        $period1 = CarbonPeriod::hours()
+            ->since('2019-09-01 08:00')
+            ->until('2019-09-01 15:00')
+            ->toEnhancedPeriod();
+
+        $period2 = CarbonPeriod::hours()
+            ->since('2019-09-01 10:00')
+            ->until('2019-09-01 18:00')
+            ->toEnhancedPeriod();
+
+        $output = [];
+
+        foreach ($period1->overlap($period2) as $period) {
+            $output[] = (string) CarbonPeriod::fromEnhancedPeriod($period);
+        }
+
+        $this->assertSame(['Every 1 hour from 2019-09-01 10:00:00 to 2019-09-01 15:00:00'], $output);
     }
 
     public function testToEnhancedPeriodException()
@@ -137,24 +161,104 @@ class EnhancedPeriodTest extends TestCase
         $this->assertSame(Precision::DAY, CarbonPeriod::convertDateIntervalToPrecisionMask($now->diff($now)));
     }
 
-    public function testReadmeExample()
+    public function testLength()
     {
-        $period1 = CarbonPeriod::hours()
-            ->since('2019-09-01 08:00')
-            ->until('2019-09-01 15:00')
-            ->toEnhancedPeriod();
+        $this->assertSame(
+            8,
+            CarbonPeriod::hours()
+                ->since('2019-09-01 08:02')
+                ->until('2019-09-01 15:03')
+                ->length()
+        );
+    }
 
-        $period2 = CarbonPeriod::hours()
-            ->since('2019-09-01 10:00')
-            ->until('2019-09-01 18:00')
-            ->toEnhancedPeriod();
+    public function testOverlapsWith()
+    {
+        $this->assertTrue(
+            CarbonPeriod::hours()
+                ->since('2019-09-01 08:02')
+                ->until('2019-09-01 15:03')
+                ->overlapsWith(
+                    CarbonPeriod::hours()
+                        ->since('2019-09-01 15:10')
+                        ->until('2019-09-01 18:03')
+                )
+        );
 
-        $output = [];
+        $this->assertTrue(
+            CarbonPeriod::hours()
+                ->since('2019-09-01 08:02')
+                ->until('2019-09-01 15:03')
+                ->overlapsWith(
+                    '2019-09-01 15:10', '2019-09-01 18:03', '1 hour'
+                )
+        );
 
-        foreach ($period1->overlap($period2) as $period) {
-            $output[] = (string) CarbonPeriod::fromEnhancedPeriod($period);
-        }
+        $this->assertTrue(
+            CarbonPeriod::hours()
+                ->since('2019-09-01 08:02')
+                ->until('2019-09-01 15:03')
+                ->overlapsWith(
+                    Period::make('2019-09-01 15:10:00', '2019-09-01 18:03:00', Precision::HOUR)
+                )
+        );
 
-        $this->assertSame(['Every 1 hour from 2019-09-01 10:00:00 to 2019-09-01 15:00:00'], $output);
+        $this->assertTrue(
+            CarbonPeriod::hours()
+                ->since('2019-09-01 08:02')
+                ->until('2019-09-01 15:03')
+                ->overlapsWith(
+                    new DatePeriod(
+                        new DateTimeImmutable('2019-09-01 15:10:00'),
+                        new DateInterval('PT1H'),
+                        new DateTimeImmutable('2019-09-01 18:03:00')
+                    )
+                )
+        );
+    }
+
+    public function testTouchesWith()
+    {
+        $this->assertTrue(
+            CarbonPeriod::hours()
+                ->since('2019-09-01 08:02')
+                ->until('2019-09-01 15:03')
+                ->touchesWith(
+                    CarbonPeriod::hours()
+                        ->since('2019-09-01 16:00')
+                        ->until('2019-09-01 18:03')
+                )
+        );
+
+        $this->assertTrue(
+            CarbonPeriod::hours()
+                ->since('2019-09-01 08:02')
+                ->until('2019-09-01 15:03')
+                ->touchesWith(
+                    '2019-09-01 16:00', '2019-09-01 18:03', '1 hour'
+                )
+        );
+
+        $this->assertTrue(
+            CarbonPeriod::hours()
+                ->since('2019-09-01 08:02')
+                ->until('2019-09-01 15:03')
+                ->touchesWith(
+                    Period::make('2019-09-01 16:00:00', '2019-09-01 18:03:00', Precision::HOUR)
+                )
+        );
+
+        $this->assertTrue(
+            CarbonPeriod::hours()
+                ->since('2019-09-01 08:02')
+                ->until('2019-09-01 15:03')
+                ->touchesWith(
+                    new DatePeriod(
+                        new DateTimeImmutable('2019-09-01 16:00:00'),
+                        new DateInterval('PT1H'),
+                        new DateTimeImmutable('2019-09-01 18:03:00')
+                    )
+                )
+        );
     }
 }

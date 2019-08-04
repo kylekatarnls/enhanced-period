@@ -5,6 +5,7 @@ namespace Cmixin;
 use Carbon\CarbonInterval;
 use Carbon\CarbonPeriod;
 use DateInterval;
+use DatePeriod;
 use Generator;
 use RuntimeException;
 use Spatie\Period\Boundaries;
@@ -98,5 +99,36 @@ trait EnhancedPeriod
         }
 
         return CarbonInterval::day();
+    }
+
+    public function length(): int
+    {
+        return (int) $this->toEnhancedPeriod()->length();
+    }
+
+    private function resolveEnhancedPeriod($period, ...$arguments): Period
+    {
+        if ($period instanceof Period) {
+            return $period;
+        }
+
+        if (!($period instanceof CarbonPeriod)) {
+            /** @var CarbonPeriod $carbonPeriod */
+            $period = $period instanceof DatePeriod
+                ? static::instance($period)
+                : static::create($period, ...$arguments);
+        }
+
+        return $period->toEnhancedPeriod();
+    }
+
+    public function overlapsWith($period, ...$arguments): bool
+    {
+        return $this->toEnhancedPeriod()->overlapsWith($this->resolveEnhancedPeriod($period, ...$arguments));
+    }
+
+    public function touchesWith($period, ...$arguments): bool
+    {
+        return $this->toEnhancedPeriod()->touchesWith($this->resolveEnhancedPeriod($period, ...$arguments));
     }
 }
