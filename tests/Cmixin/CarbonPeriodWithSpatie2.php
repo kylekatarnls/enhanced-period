@@ -26,6 +26,11 @@ class CarbonPeriodWithSpatie2 extends CarbonPeriod
 {
     use EnhancedPeriod;
 
+    protected function isPeriodCallableMethod($method)
+    {
+        return $method === 'duration';
+    }
+
     public function toEnhancedPeriod()
     {
         $mask = static::convertDateIntervalToPrecisionMask($this->getDateInterval());
