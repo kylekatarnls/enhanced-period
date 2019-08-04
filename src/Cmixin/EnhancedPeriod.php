@@ -84,6 +84,25 @@ trait EnhancedPeriod
     }
 
     /**
+     * Convert a PeriodCollection object into an array of CarbonPeriod instances.
+     *
+     * @param PeriodCollection $periods
+     * @param bool             $mutable Force dates to be mutable by passing true
+     *
+     * @return CarbonPeriod[]
+     */
+    public static function fromPeriodCollection(PeriodCollection $periods, $mutable = false): array
+    {
+        $result = [];
+
+        foreach ($periods as $key => $period) {
+            $result[$key] = static::fromEnhancedPeriod($period, $mutable);
+        }
+
+        return $result;
+    }
+
+    /**
      * Convert DateInterval into spatie/period precision mask.
      *
      * @param DateInterval $interval
@@ -196,25 +215,6 @@ trait EnhancedPeriod
             ),
             !($this->getOptions() & CarbonPeriod::IMMUTABLE)
         );
-    }
-
-    /**
-     * Convert a PeriodCollection object into an array of CarbonPeriod instances.
-     *
-     * @param PeriodCollection $periods
-     * @param bool             $mutable Force dates to be mutable by passing true
-     *
-     * @return CarbonPeriod[]
-     */
-    public static function fromPeriodCollection(PeriodCollection $periods, $mutable = false): array
-    {
-        $result = [];
-
-        foreach ($periods as $key => $period) {
-            $result[$key] = static::fromEnhancedPeriod($period, $mutable);
-        }
-
-        return $result;
     }
 
     /**
