@@ -10,6 +10,7 @@ use Cmixin\EnhancedPeriod;
 use DateInterval;
 use DatePeriod;
 use DateTimeImmutable;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Spatie\Period\Period;
@@ -343,6 +344,28 @@ class EnhancedPeriodTest extends TestCase
         $overlap = $a->overlapAll($b, $c);
 
         $this->assertNull($overlap);
+    }
+
+    public function testOverlapAllVersion1()
+    {
+        $a = CarbonPeriodWithSpatie1::create('2018-01-01', '2018-02-01');
+        $b = CarbonPeriodWithSpatie1::create('2018-05-10', '2018-06-01');
+        $c = CarbonPeriodWithSpatie1::create('2018-01-10', '2018-02-01');
+
+        $overlap = $a->overlapAll($b, $c);
+
+        $this->assertNull($overlap);
+    }
+
+    public function testOverlapAllVersion1Exception()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Fake error');
+
+        $a = CarbonPeriodWithSpatie1::create('2018-01-01', '2018-02-01');
+        $b = CarbonPeriodWithSpatie1::create('2018-05-10', '2018-06-01');
+
+        $a->overlapAll($b);
     }
 
     public function testDiffAny()

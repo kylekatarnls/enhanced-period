@@ -266,11 +266,9 @@ trait EnhancedPeriod
                 !($this->getOptions() & CarbonPeriod::IMMUTABLE)
             );
         } catch (Throwable $e) {
-            // @codeCoverageIgnoreStart
             if ($e->getMessage() !== 'Call to a member function overlapSingle() on null') {
                 throw $e;
             }
-            // @codeCoverageIgnoreEnd
         }
 
         return null;
