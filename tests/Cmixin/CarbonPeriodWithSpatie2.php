@@ -14,6 +14,8 @@ class PeriodWithDuration extends Period
     {
         if (!class_exists(PeriodDuration::class)) {
             include_once __DIR__.'/PeriodDuration.php';
+
+            return new PeriodDuration();
         }
 
         return parent::duration();
@@ -24,7 +26,7 @@ class CarbonPeriodWithSpatie2 extends CarbonPeriod
 {
     use EnhancedPeriod;
 
-    protected function toEnhancedPeriod()
+    public function toEnhancedPeriod()
     {
         $mask = static::convertDateIntervalToPrecisionMask($this->getDateInterval());
         /** @var CarbonPeriod $period */

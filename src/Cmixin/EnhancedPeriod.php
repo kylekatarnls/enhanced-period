@@ -14,6 +14,7 @@ use Spatie\Period\Period;
 use Spatie\Period\PeriodCollection;
 use Spatie\Period\PeriodDuration;
 use Spatie\Period\Precision;
+use Throwable;
 
 trait EnhancedPeriod
 {
@@ -257,12 +258,22 @@ trait EnhancedPeriod
      */
     public function overlapAll(...$periods): ?CarbonPeriod
     {
-        return static::fromNullableEnhancedPeriod(
-            $this->toEnhancedPeriod()->overlapAll(
-                ...$this->resolvePeriodArgumentsList($periods)
-            ),
-            !($this->getOptions() & CarbonPeriod::IMMUTABLE)
-        );
+        try {
+            return static::fromNullableEnhancedPeriod(
+                $this->toEnhancedPeriod()->overlapAll(
+                    ...$this->resolvePeriodArgumentsList($periods)
+                ),
+                !($this->getOptions() & CarbonPeriod::IMMUTABLE)
+            );
+        } catch (Throwable $e) {
+            // @codeCoverageIgnoreStart
+            if ($e->getMessage() !== 'Call to a member function overlapSingle() on null') {
+                throw $e;
+            }
+            // @codeCoverageIgnoreEnd
+        }
+
+        return null;
     }
 
     /**
