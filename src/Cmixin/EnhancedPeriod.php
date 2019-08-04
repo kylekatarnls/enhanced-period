@@ -217,7 +217,7 @@ trait EnhancedPeriod
     }
 
     /**
-     * Return overlap chunks that are present in at least 2 periods:
+     * Return overlap chunks that are present in at least 2 periods.
      *
      * A       [========]
      * B                    [==]
@@ -243,7 +243,7 @@ trait EnhancedPeriod
     }
 
     /**
-     * Return the merged overlap of all periods:
+     * Return the merged overlap of all periods.
      *
      * A              [============]
      * B                   [==]
@@ -258,7 +258,9 @@ trait EnhancedPeriod
     public function overlapAll(...$periods): ?CarbonPeriod
     {
         return static::fromNullableEnhancedPeriod(
-            $this->toEnhancedPeriod()->overlapAll($this->resolvePeriodArgumentsList($periods)),
+            $this->toEnhancedPeriod()->overlapAll(
+                ...$this->resolvePeriodArgumentsList($periods)
+            ),
             !($this->getOptions() & CarbonPeriod::IMMUTABLE)
         );
     }
@@ -293,15 +295,16 @@ trait EnhancedPeriod
      *
      * DIFF             [=]      [====]
      *
-     * @param $period
-     * @param mixed ...$arguments
+     * @param mixed ...$periods
      *
      * @return CarbonPeriod[]
      */
-    public function diff($period, ...$arguments): array
+    public function diff(...$periods): array
     {
         return static::fromPeriodCollection(
-            $this->toEnhancedPeriod()->diff($this->resolveEnhancedPeriod($period, ...$arguments)),
+            $this->toEnhancedPeriod()->diff(
+                ...$this->resolvePeriodArgumentsList($periods)
+            ),
             !($this->getOptions() & CarbonPeriod::IMMUTABLE)
         );
     }

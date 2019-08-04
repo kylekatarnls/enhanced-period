@@ -319,11 +319,86 @@ class EnhancedPeriodTest extends TestCase
 
         $overlapPeriods = $d->overlapAny($a, $b, $c);
 
-
         $this->assertCount(3, $overlapPeriods);
 
         $this->assertTrue($overlapPeriods[0]->equalTo(CarbonPeriod::create('2018-01-20', '2018-01-31')));
         $this->assertTrue($overlapPeriods[1]->equalTo(CarbonPeriod::create('2018-02-10', '2018-02-20')));
         $this->assertTrue($overlapPeriods[2]->equalTo(CarbonPeriod::create('2018-03-01', '2018-03-10')));
+    }
+
+    public function testOverlapAll()
+    {
+        $a = CarbonPeriod::create('2018-01-01', '2018-01-31');
+        $b = CarbonPeriod::create('2018-01-10', '2018-01-15');
+        $c = CarbonPeriod::create('2018-01-10', '2018-01-31');
+
+        $overlap = $a->overlapAll($b, $c);
+
+        $this->assertTrue($overlap->equalTo(CarbonPeriod::create('2018-01-10', '2018-01-15')));
+
+        $a = CarbonPeriod::create('2018-01-01', '2018-02-01');
+        $b = CarbonPeriod::create('2018-05-10', '2018-06-01');
+        $c = CarbonPeriod::create('2018-01-10', '2018-02-01');
+
+        $overlap = $a->overlapAll($b, $c);
+
+        $this->assertNull($overlap);
+    }
+
+    public function testDiffAny()
+    {
+        $a = CarbonPeriod::create('2018-01-01', '2018-01-15');
+        $b = CarbonPeriod::create('2018-01-10', '2018-01-30');
+
+        $diffs = $a->diffAny($b);
+
+        $this->assertTrue($diffs[0]->equalTo(CarbonPeriod::create('2018-01-01', '2018-01-09')));
+        $this->assertTrue($diffs[1]->equalTo(CarbonPeriod::create('2018-01-16', '2018-01-30')));
+    }
+
+    public function testDiff()
+    {
+        $a = CarbonPeriod::create('2018-01-01', '2018-01-31');
+        $b = CarbonPeriod::create('2018-02-10', '2018-02-20');
+        $c = CarbonPeriod::create('2018-02-11', '2018-03-31');
+
+        $current = CarbonPeriod::create('2018-01-20', '2018-03-15');
+
+        $diff = $current->diff($a, $b, $c);
+
+        $this->assertCount(1, $diff);
+
+        $this->assertTrue($diff[0]->equalTo(CarbonPeriod::create('2018-02-01', '2018-02-09')));
+    }
+
+    public function testGap()
+    {
+        $a = CarbonPeriod::create('2018-01-01', '2018-01-10');
+        $b = CarbonPeriod::create('2018-01-15', '2018-01-31');
+
+        $gap = $a->gap($b);
+
+        $this->assertTrue($gap->equalTo(CarbonPeriod::create('2018-01-11', '2018-01-14')));
+
+        $a = CarbonPeriod::create('2018-01-15', '2018-01-31');
+        $b = CarbonPeriod::create('2018-01-01', '2018-01-10');
+
+        $gap = $a->gap($b);
+
+        $this->assertTrue($gap->equalTo(CarbonPeriod::create('2018-01-11', '2018-01-14')));
+
+        $a = CarbonPeriod::create('2018-01-15', '2018-01-31');
+        $b = CarbonPeriod::create('2018-02-01', '2018-02-01');
+
+        $gap = $a->gap($b);
+
+        $this->assertNull($gap);
+
+        $a = CarbonPeriod::create('2018-01-15', '2018-01-31');
+        $b = CarbonPeriod::create('2018-01-28', '2018-02-01');
+
+        $gap = $a->gap($b);
+
+        $this->assertNull($gap);
     }
 }
