@@ -2,13 +2,19 @@
 
 namespace Tests\Cmixin;
 
+use BadMethodCallException;
 use Carbon\Carbon;
 use Carbon\CarbonInterval;
 use Carbon\CarbonPeriod;
 use Cmixin\EnhancedPeriod;
+use DateInterval;
+use DatePeriod;
+use DateTimeImmutable;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Spatie\Period\Period;
+use Spatie\Period\PeriodDuration;
 use Spatie\Period\Precision;
 
 class EnhancedPeriodTest extends TestCase
@@ -19,7 +25,27 @@ class EnhancedPeriodTest extends TestCase
     protected function setUp(): void
     {
         CarbonPeriod::mixin(EnhancedPeriod::class);
-        Carbon::mixin(EnhancedPeriod::class);
+    }
+
+    public function testReadmeExample()
+    {
+        $period1 = CarbonPeriod::hours()
+            ->since('2019-09-01 08:00')
+            ->until('2019-09-01 15:00')
+            ->toEnhancedPeriod();
+
+        $period2 = CarbonPeriod::hours()
+            ->since('2019-09-01 10:00')
+            ->until('2019-09-01 18:00')
+            ->toEnhancedPeriod();
+
+        $output = [];
+
+        foreach ($period1->overlap($period2) as $period) {
+            $output[] = (string) CarbonPeriod::fromEnhancedPeriod($period);
+        }
+
+        $this->assertSame(['Every 1 hour from 2019-09-01 10:00:00 to 2019-09-01 15:00:00'], $output);
     }
 
     public function testToEnhancedPeriodException()
@@ -84,6 +110,34 @@ class EnhancedPeriodTest extends TestCase
         $this->assertSame('00-00-01 00:00:00', $period->getDateInterval()->format('%Y-%M-%D %H:%I:%S'));
     }
 
+    public function testNullableEnhancedPeriod()
+    {
+        $period = Period::make('2019-09-01', '2019-09-12');
+        $period = CarbonPeriod::fromNullableEnhancedPeriod($period);
+
+        $this->assertSame('2019-09-01 00:00:00', $period->getStartDate()->format('Y-m-d H:i:s'));
+        $this->assertSame('2019-09-12 00:00:00', $period->getEndDate()->format('Y-m-d H:i:s'));
+        $this->assertSame('00-00-01 00:00:00', $period->getDateInterval()->format('%Y-%M-%D %H:%I:%S'));
+
+        $this->assertNull(CarbonPeriod::fromNullableEnhancedPeriod(null));
+    }
+
+    public function testDurationException()
+    {
+        $this->expectException(BadMethodCallException::class);
+        $this->expectExceptionMessage('duration() method is only available since spatie/period 2.0.');
+
+        CarbonPeriodWithSpatie1::create('2019-09-01', '2019-09-12')->duration();
+    }
+
+    public function testDuration()
+    {
+        $this->assertInstanceOf(
+            PeriodDuration::class,
+            CarbonPeriodWithSpatie2::create('2019-09-01', '2019-09-12')->duration()
+        );
+    }
+
     public function getMaskAndIntervalParis()
     {
         return [
@@ -137,24 +191,237 @@ class EnhancedPeriodTest extends TestCase
         $this->assertSame(Precision::DAY, CarbonPeriod::convertDateIntervalToPrecisionMask($now->diff($now)));
     }
 
-    public function testReadmeExample()
+    public function testLength()
     {
-        $period1 = CarbonPeriod::hours()
-            ->since('2019-09-01 08:00')
-            ->until('2019-09-01 15:00')
-            ->toEnhancedPeriod();
+        $this->assertSame(
+            8,
+            CarbonPeriod::days()
+                ->since('2019-09-01 08:02')
+                ->until('2019-09-08 15:03')
+                ->length()
+        );
+    }
 
-        $period2 = CarbonPeriod::hours()
-            ->since('2019-09-01 10:00')
-            ->until('2019-09-01 18:00')
-            ->toEnhancedPeriod();
+    public function testOverlapsWith()
+    {
+        $this->assertTrue(
+            CarbonPeriod::hours()
+                ->since('2019-09-01 08:02')
+                ->until('2019-09-01 15:03')
+                ->overlapsWith(
+                    CarbonPeriod::hours()
+                        ->since('2019-09-01 15:10')
+                        ->until('2019-09-01 18:03')
+                )
+        );
 
-        $output = [];
+        $this->assertTrue(
+            CarbonPeriod::hours()
+                ->since('2019-09-01 08:02')
+                ->until('2019-09-01 15:03')
+                ->overlapsWith(
+                    '2019-09-01 15:10', '2019-09-01 18:03', '1 hour'
+                )
+        );
 
-        foreach ($period1->overlap($period2) as $period) {
-            $output[] = (string) CarbonPeriod::fromEnhancedPeriod($period);
-        }
+        $this->assertTrue(
+            CarbonPeriod::hours()
+                ->since('2019-09-01 08:02')
+                ->until('2019-09-01 15:03')
+                ->overlapsWith(
+                    Period::make('2019-09-01 15:10:00', '2019-09-01 18:03:00', Precision::HOUR)
+                )
+        );
 
-        $this->assertSame(['Every 1 hour from 2019-09-01 10:00:00 to 2019-09-01 15:00:00'], $output);
+        $this->assertTrue(
+            CarbonPeriod::hours()
+                ->since('2019-09-01 08:02')
+                ->until('2019-09-01 15:03')
+                ->overlapsWith(
+                    new DatePeriod(
+                        new DateTimeImmutable('2019-09-01 15:10:00'),
+                        new DateInterval('PT1H'),
+                        new DateTimeImmutable('2019-09-01 18:03:00')
+                    )
+                )
+        );
+    }
+
+    public function testTouchesWith()
+    {
+        $this->assertTrue(
+            CarbonPeriod::hours()
+                ->since('2019-09-01 08:02')
+                ->until('2019-09-01 15:03')
+                ->touchesWith(
+                    CarbonPeriod::hours()
+                        ->since('2019-09-01 16:00')
+                        ->until('2019-09-01 18:03')
+                )
+        );
+
+        $this->assertTrue(
+            CarbonPeriod::hours()
+                ->since('2019-09-01 08:02')
+                ->until('2019-09-01 15:03')
+                ->touchesWith(
+                    '2019-09-01 16:00', '2019-09-01 18:03', '1 hour'
+                )
+        );
+
+        $this->assertTrue(
+            CarbonPeriod::hours()
+                ->since('2019-09-01 08:02')
+                ->until('2019-09-01 15:03')
+                ->touchesWith(
+                    Period::make('2019-09-01 16:00:00', '2019-09-01 18:03:00', Precision::HOUR)
+                )
+        );
+
+        $this->assertTrue(
+            CarbonPeriod::hours()
+                ->since('2019-09-01 08:02')
+                ->until('2019-09-01 15:03')
+                ->touchesWith(
+                    new DatePeriod(
+                        new DateTimeImmutable('2019-09-01 16:00:00'),
+                        new DateInterval('PT1H'),
+                        new DateTimeImmutable('2019-09-01 18:03:00')
+                    )
+                )
+        );
+    }
+
+    public function testOverlap()
+    {
+        $a = CarbonPeriod::create('2018-01-01', '2018-01-15');
+        $b = CarbonPeriod::create('2018-01-10', '2018-01-30');
+        $overlapPeriod = CarbonPeriod::create('2018-01-10', '2018-01-15');
+        $result = $a->overlap($b);
+
+        $this->assertSame(0, $result->getOptions());
+        $this->assertTrue($result->equalTo($overlapPeriod));
+
+        $a = CarbonPeriod::create('2018-01-01', '2018-01-15', CarbonPeriod::IMMUTABLE);
+        $b = CarbonPeriod::create('2018-01-10', '2018-01-30', CarbonPeriod::IMMUTABLE);
+        $overlapPeriod = CarbonPeriod::create('2018-01-10', '2018-01-15', CarbonPeriod::IMMUTABLE);
+        $result = $a->overlap($b);
+
+        $this->assertSame(CarbonPeriod::IMMUTABLE, $result->getOptions());
+        $this->assertTrue($result->equalTo($overlapPeriod));
+    }
+
+    public function testOverlapAny()
+    {
+        $a = CarbonPeriod::create('2018-01-01', '2018-01-31');
+        $b = CarbonPeriod::create('2018-02-10', '2018-02-20');
+        $c = CarbonPeriod::create('2018-03-01', '2018-03-31');
+        $d = CarbonPeriod::create('2018-01-20', '2018-03-10');
+
+        $overlapPeriods = $d->overlapAny($a, $b, $c);
+
+        $this->assertCount(3, $overlapPeriods);
+
+        $this->assertTrue($overlapPeriods[0]->equalTo(CarbonPeriod::create('2018-01-20', '2018-01-31')));
+        $this->assertTrue($overlapPeriods[1]->equalTo(CarbonPeriod::create('2018-02-10', '2018-02-20')));
+        $this->assertTrue($overlapPeriods[2]->equalTo(CarbonPeriod::create('2018-03-01', '2018-03-10')));
+    }
+
+    public function testOverlapAll()
+    {
+        $a = CarbonPeriod::create('2018-01-01', '2018-01-31');
+        $b = CarbonPeriod::create('2018-01-10', '2018-01-15');
+        $c = CarbonPeriod::create('2018-01-10', '2018-01-31');
+
+        $overlap = $a->overlapAll($b, $c);
+
+        $this->assertTrue($overlap->equalTo(CarbonPeriod::create('2018-01-10', '2018-01-15')));
+
+        $a = CarbonPeriod::create('2018-01-01', '2018-02-01');
+        $b = CarbonPeriod::create('2018-05-10', '2018-06-01');
+        $c = CarbonPeriod::create('2018-01-10', '2018-02-01');
+
+        $overlap = $a->overlapAll($b, $c);
+
+        $this->assertNull($overlap);
+    }
+
+    public function testOverlapAllVersion1()
+    {
+        $a = CarbonPeriodWithSpatie1::create('2018-01-01', '2018-02-01');
+        $b = CarbonPeriodWithSpatie1::create('2018-05-10', '2018-06-01');
+        $c = CarbonPeriodWithSpatie1::create('2018-01-10', '2018-02-01');
+
+        $overlap = $a->overlapAll($b, $c);
+
+        $this->assertNull($overlap);
+    }
+
+    public function testOverlapAllVersion1Exception()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Fake error');
+
+        $a = CarbonPeriodWithSpatie1::create('2018-01-01', '2018-02-01');
+        $b = CarbonPeriodWithSpatie1::create('2018-05-10', '2018-06-01');
+
+        $a->overlapAll($b);
+    }
+
+    public function testDiffAny()
+    {
+        $a = CarbonPeriod::create('2018-01-01', '2018-01-15');
+        $b = CarbonPeriod::create('2018-01-10', '2018-01-30');
+
+        $diffs = $a->diffAny($b);
+
+        $this->assertTrue($diffs[0]->equalTo(CarbonPeriod::create('2018-01-01', '2018-01-09')));
+        $this->assertTrue($diffs[1]->equalTo(CarbonPeriod::create('2018-01-16', '2018-01-30')));
+    }
+
+    public function testDiff()
+    {
+        $a = CarbonPeriod::create('2018-01-01', '2018-01-31');
+        $b = CarbonPeriod::create('2018-02-10', '2018-02-20');
+        $c = CarbonPeriod::create('2018-02-11', '2018-03-31');
+
+        $current = CarbonPeriod::create('2018-01-20', '2018-03-15');
+
+        $diff = $current->diff($a, $b, $c);
+
+        $this->assertCount(1, $diff);
+
+        $this->assertTrue($diff[0]->equalTo(CarbonPeriod::create('2018-02-01', '2018-02-09')));
+    }
+
+    public function testGap()
+    {
+        $a = CarbonPeriod::create('2018-01-01', '2018-01-10');
+        $b = CarbonPeriod::create('2018-01-15', '2018-01-31');
+
+        $gap = $a->gap($b);
+
+        $this->assertTrue($gap->equalTo(CarbonPeriod::create('2018-01-11', '2018-01-14')));
+
+        $a = CarbonPeriod::create('2018-01-15', '2018-01-31');
+        $b = CarbonPeriod::create('2018-01-01', '2018-01-10');
+
+        $gap = $a->gap($b);
+
+        $this->assertTrue($gap->equalTo(CarbonPeriod::create('2018-01-11', '2018-01-14')));
+
+        $a = CarbonPeriod::create('2018-01-15', '2018-01-31');
+        $b = CarbonPeriod::create('2018-02-01', '2018-02-01');
+
+        $gap = $a->gap($b);
+
+        $this->assertNull($gap);
+
+        $a = CarbonPeriod::create('2018-01-15', '2018-01-31');
+        $b = CarbonPeriod::create('2018-01-28', '2018-02-01');
+
+        $gap = $a->gap($b);
+
+        $this->assertNull($gap);
     }
 }

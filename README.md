@@ -51,3 +51,44 @@ Every 1 hour from 2019-09-01 10:00:00 to 2019-09-01 15:00:00
 
 See methods available on `Spatie\Period\Period` class here:
 https://github.com/spatie/period
+
+You also can call some methods directly on CarbonPeriod instances:
+
+### length
+```php
+length(): int
+```
+
+```php
+CarbonPeriod::create('2019-08-20', '2019-09-01')->length();
+```
+
+### overlapsWith
+```php
+overlapsWith($period, ...$arguments): bool
+```
+
+```php
+CarbonPeriod::create('2019-08-20', '2019-09-01')->overlapsWith('2019-08-28', '2019-09-03');
+```
+
+You can pass to `overlapsWith`: `Spatie\Period\Period`, `CarbonPeriod`, `DatePeriod` or
+arguments to construct a `CarbonPeriod`.
+
+Note: `->overlapsWith` will give different results from `->overlaps` because it use internally
+`Spatie\Period\Period` and its precision mask (use floor rounding).
+
+
+```php
+touchesWith($period, ...$arguments): bool
+```
+
+```php
+CarbonPeriod::create('2019-08-20', '2019-09-01')->touchesWith('2019-09-02', '2019-09-06');
+```
+
+You can pass to `overlapsWith`: `Spatie\Period\Period`, `CarbonPeriod`, `DatePeriod` or
+arguments to construct a `CarbonPeriod`.
+
+Note: `->touchesWith` will give different results from `->isConsecutiveWith` because it use internally
+`Spatie\Period\Period` and its precision mask (use floor rounding).
