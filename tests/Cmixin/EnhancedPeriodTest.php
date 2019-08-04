@@ -29,23 +29,12 @@ class EnhancedPeriodTest extends TestCase
 
     public function testReadmeExample()
     {
-        $period1 = CarbonPeriod::hours()
-            ->since('2019-09-01 08:00')
-            ->until('2019-09-01 15:00')
-            ->toEnhancedPeriod();
+        $a = CarbonPeriod::create('2018-01-01', '2018-01-10')->toEnhancedPeriod();
+        $b = CarbonPeriod::create('2018-01-15', '2018-01-31')->toEnhancedPeriod();
 
-        $period2 = CarbonPeriod::hours()
-            ->since('2019-09-01 10:00')
-            ->until('2019-09-01 18:00')
-            ->toEnhancedPeriod();
+        $output = (string) CarbonPeriod::fromEnhancedPeriod($a->gap($b));
 
-        $output = [];
-
-        foreach ($period1->overlap($period2) as $period) {
-            $output[] = (string) CarbonPeriod::fromEnhancedPeriod($period);
-        }
-
-        $this->assertSame(['Every 1 hour from 2019-09-01 10:00:00 to 2019-09-01 15:00:00'], $output);
+        $this->assertSame('Every 1 day from 2018-01-11 to 2018-01-14', $output);
     }
 
     public function testToEnhancedPeriodException()
