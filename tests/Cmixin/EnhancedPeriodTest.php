@@ -2,6 +2,7 @@
 
 namespace Tests\Cmixin;
 
+use BadMethodCallException;
 use Carbon\Carbon;
 use Carbon\CarbonInterval;
 use Carbon\CarbonPeriod;
@@ -12,6 +13,7 @@ use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Spatie\Period\Period;
+use Spatie\Period\PeriodDuration;
 use Spatie\Period\Precision;
 
 class EnhancedPeriodTest extends TestCase
@@ -22,7 +24,6 @@ class EnhancedPeriodTest extends TestCase
     protected function setUp(): void
     {
         CarbonPeriod::mixin(EnhancedPeriod::class);
-        Carbon::mixin(EnhancedPeriod::class);
     }
 
     public function testReadmeExample()
@@ -108,6 +109,34 @@ class EnhancedPeriodTest extends TestCase
         $this->assertSame('00-00-01 00:00:00', $period->getDateInterval()->format('%Y-%M-%D %H:%I:%S'));
     }
 
+    public function testNullableEnhancedPeriod()
+    {
+        $period = Period::make('2019-09-01', '2019-09-12');
+        $period = CarbonPeriod::fromNullableEnhancedPeriod($period);
+
+        $this->assertSame('2019-09-01 00:00:00', $period->getStartDate()->format('Y-m-d H:i:s'));
+        $this->assertSame('2019-09-12 00:00:00', $period->getEndDate()->format('Y-m-d H:i:s'));
+        $this->assertSame('00-00-01 00:00:00', $period->getDateInterval()->format('%Y-%M-%D %H:%I:%S'));
+
+        $this->assertNull(CarbonPeriod::fromNullableEnhancedPeriod(null));
+    }
+
+    public function testDurationException()
+    {
+        $this->expectException(BadMethodCallException::class);
+        $this->expectExceptionMessage('duration() method is only available since spatie/period 2.0.');
+
+        CarbonPeriodWithSpatie1::create('2019-09-01', '2019-09-12')->duration();
+    }
+
+    public function testDuration()
+    {
+        $this->assertInstanceOf(
+            PeriodDuration::class,
+            CarbonPeriodWithSpatie2::create('2019-09-01', '2019-09-12')->duration()
+        );
+    }
+
     public function getMaskAndIntervalParis()
     {
         return [
@@ -165,9 +194,9 @@ class EnhancedPeriodTest extends TestCase
     {
         $this->assertSame(
             8,
-            CarbonPeriod::hours()
+            CarbonPeriod::days()
                 ->since('2019-09-01 08:02')
-                ->until('2019-09-01 15:03')
+                ->until('2019-09-08 15:03')
                 ->length()
         );
     }
@@ -260,5 +289,41 @@ class EnhancedPeriodTest extends TestCase
                     )
                 )
         );
+    }
+
+    public function testOverlap()
+    {
+        $a = CarbonPeriod::create('2018-01-01', '2018-01-15');
+        $b = CarbonPeriod::create('2018-01-10', '2018-01-30');
+        $overlapPeriod = CarbonPeriod::create('2018-01-10', '2018-01-15');
+        $result = $a->overlap($b);
+
+        $this->assertSame(0, $result->getOptions());
+        $this->assertTrue($result->equalTo($overlapPeriod));
+
+        $a = CarbonPeriod::create('2018-01-01', '2018-01-15', CarbonPeriod::IMMUTABLE);
+        $b = CarbonPeriod::create('2018-01-10', '2018-01-30', CarbonPeriod::IMMUTABLE);
+        $overlapPeriod = CarbonPeriod::create('2018-01-10', '2018-01-15', CarbonPeriod::IMMUTABLE);
+        $result = $a->overlap($b);
+
+        $this->assertSame(CarbonPeriod::IMMUTABLE, $result->getOptions());
+        $this->assertTrue($result->equalTo($overlapPeriod));
+    }
+
+    public function testOverlapAny()
+    {
+        $a = CarbonPeriod::create('2018-01-01', '2018-01-31');
+        $b = CarbonPeriod::create('2018-02-10', '2018-02-20');
+        $c = CarbonPeriod::create('2018-03-01', '2018-03-31');
+        $d = CarbonPeriod::create('2018-01-20', '2018-03-10');
+
+        $overlapPeriods = $d->overlapAny($a, $b, $c);
+
+
+        $this->assertCount(3, $overlapPeriods);
+
+        $this->assertTrue($overlapPeriods[0]->equalTo(CarbonPeriod::create('2018-01-20', '2018-01-31')));
+        $this->assertTrue($overlapPeriods[1]->equalTo(CarbonPeriod::create('2018-02-10', '2018-02-20')));
+        $this->assertTrue($overlapPeriods[2]->equalTo(CarbonPeriod::create('2018-03-01', '2018-03-10')));
     }
 }
