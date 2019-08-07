@@ -39,7 +39,7 @@ trait EnhancedPeriod
         $period = $this->copy()->floor();
         $end = $period->calculateEnd();
 
-        return new Period(
+        return Period::make(
             $period->getStartDate()->toImmutable(),
             $end ? $end->toImmutable() : null,
             $mask,
