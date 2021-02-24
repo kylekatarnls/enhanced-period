@@ -384,11 +384,6 @@ trait EnhancedPeriod
         return $period->toEnhancedPeriod();
     }
 
-    private function isPeriodCallableMethod($method): bool
-    {
-        return method_exists(Period::class, $method) && is_callable([Period::class, $method]);
-    }
-
     private function callEnhancedPeriodMethods(Period $period, array $methods, array $arguments = [])
     {
         $lastMethod = array_pop($methods);
