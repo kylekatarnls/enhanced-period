@@ -51,13 +51,21 @@ trait EnhancedPeriod
     /**
      * Convert Spatie\Period\Period instance into CarbonPeriod instance.
      *
-     * @param Period $period
-     * @param bool   $mutable Force dates to be mutable by passing true
+     * @param Period|PeriodCollection $period
+     * @param bool                    $mutable Force dates to be mutable by passing true
      *
      * @return CarbonPeriod|EnhancedPeriod
      */
-    public static function fromEnhancedPeriod(Period $period, $mutable = false)
+    public static function fromEnhancedPeriod($period, $mutable = false)
     {
+        if ($period instanceof PeriodCollection) {
+            $collection = $period;
+
+            foreach ($collection as $period) {
+                break;
+            }
+        }
+
         return new static(
             $period->getStart(),
             $period->getEnd(),
@@ -71,12 +79,12 @@ trait EnhancedPeriod
     /**
      * Convert null into null and Spatie\Period\Period instance into CarbonPeriod instance.
      *
-     * @param null|Period $period
-     * @param bool        $mutable Force dates to be mutable by passing true
+     * @param Period|PeriodCollection|null $period
+     * @param bool                         $mutable Force dates to be mutable by passing true
      *
-     * @return null|CarbonPeriod|EnhancedPeriod
+     * @return CarbonPeriod|EnhancedPeriod|null
      */
-    public static function fromNullableEnhancedPeriod(Period $period = null, $mutable = false)
+    public static function fromNullableEnhancedPeriod($period = null, $mutable = false)
     {
         return $period
             ? static::fromEnhancedPeriod($period, $mutable)
@@ -233,10 +241,8 @@ trait EnhancedPeriod
      */
     public function overlapAny(...$periods): array
     {
-        $method = $this->isPeriodCallableMethod('overlapSingle') ? 'overlap' : 'overlapAny';
-
         return static::fromPeriodCollection(
-            $this->toEnhancedPeriod()->$method(
+            $this->toEnhancedPeriod()->overlap(
                 ...$this->resolvePeriodArgumentsList($periods)
             ),
             !($this->getOptions() & CarbonPeriod::IMMUTABLE)

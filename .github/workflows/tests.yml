@@ -45,6 +45,9 @@ jobs:
         if: steps.composer-cache.outputs.cache-hit != 'true'
         run: composer update --prefer-dist --prefer-${{ matrix.setup }} --no-progress ${{ matrix.php >= 8.1 && '--ignore-platform-req=php' || '' }}
 
+      - name: Fix compatibility
+        run: php tests/fix-compatibility.php
+
       - name: Run test suite
         run: vendor/bin/phpunit --verbose --no-coverage
         env:
