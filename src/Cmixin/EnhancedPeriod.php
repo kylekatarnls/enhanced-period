@@ -393,12 +393,6 @@ trait EnhancedPeriod
     {
         $lastMethod = array_pop($methods);
 
-        foreach ($methods as $method) {
-            if ($this->isPeriodCallableMethod($method)) {
-                return $period->$method(...$arguments);
-            }
-        }
-
         return $period->$lastMethod(...$arguments);
     }
 
