@@ -209,7 +209,9 @@ class EnhancedPeriodTest extends TestCase
                 ->since('2019-09-01 08:02')
                 ->until('2019-09-01 15:03')
                 ->overlapsWith(
-                    '2019-09-01 15:10', '2019-09-01 18:03', '1 hour'
+                    '2019-09-01 15:10',
+                    '2019-09-01 18:03',
+                    '1 hour'
                 )
         );
 
@@ -254,7 +256,9 @@ class EnhancedPeriodTest extends TestCase
                 ->since('2019-09-01 08:02')
                 ->until('2019-09-01 15:03')
                 ->touchesWith(
-                    '2019-09-01 16:00', '2019-09-01 18:03', '1 hour'
+                    '2019-09-01 16:00',
+                    '2019-09-01 18:03',
+                    '1 hour'
                 )
         );
 
