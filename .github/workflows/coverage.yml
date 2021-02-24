@@ -35,8 +35,8 @@ jobs:
         uses: actions/cache@v2
         with:
           path: vendor
-          key: ${{ runner.os }}-style-php-${{ matrix.php }}-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-style-php-${{ matrix.php }}-
+          key: ${{ runner.os }}-style-php-${{ matrix.php }}-coverage-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-style-php-${{ matrix.php }}-coverage-
         env:
           COMPOSER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
