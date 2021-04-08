@@ -5,7 +5,6 @@ namespace Cmixin;
 use BadMethodCallException;
 use Carbon\CarbonInterval;
 use Carbon\CarbonPeriod;
-use Carbon\Exceptions\BadFluentConstructorException;
 use DateInterval;
 use DatePeriod;
 use EnhancedPeriod\Enum\Boundaries;
@@ -255,7 +254,7 @@ trait EnhancedPeriod
 
             try {
                 return CarbonInterval::$precision();
-            } catch (BadFluentConstructorException $exception) {
+            } catch (BadMethodCallException $exception) {
                 // try int mask
             }
         }
