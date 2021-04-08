@@ -283,27 +283,31 @@ Convert `PeriodCollection` object into an array of `CarbonPeriod` instances.
 You can pass `true` as a second argument to select `Carbon` as date class rather
 than `CarbonImmutable` (by default).
 
-### convertDateIntervalToPrecisionMask
+### convertDateIntervalToPrecision
 
 ```php
-convertDateIntervalToPrecisionMask(DateInterval $interval): int
+convertDateIntervalToPrecision(DateInterval $interval): int|Precision
 ```
 
 ```php
-$precision = CarbonPeriod::convertDateIntervalToPrecisionMask(CarbonInterval::day()); // Precision::DAY
+$precision = CarbonPeriod::convertDateIntervalToPrecision(CarbonInterval::day());
+// Precision::DAY() (with PHP >= 8 and spatie/period >= 2)
+// Precision::DAY (in older versions)
 ```
 
 Convert `DateInterval` objects (such as `CarbonInterval`) into a Spatie precision mask
 if it exists, throws an `RuntimeException` if it does not match any mask.
 
-### convertDateIntervalToPrecisionMask
+### convertDateIntervalToPrecision
 
 ```php
-convertPrecisionMaskToDateInterval(int $precisionMask): CarbonInterval
+convertPrecisionMaskToDateInterval(int|Precision $precisionMask): CarbonInterval
 ```
 
 ```php
-$interval = CarbonPeriod::convertPrecisionMaskToDateInterval(Precision::DAY); // CarbonInterval::day()
+$interval = CarbonPeriod::convertPrecisionMaskToDateInterval(Precision::DAY()); // CarbonInterval::day()
+// Pass Precision object (such as Precision::DAY()) with PHP >= 8 and spatie/period >= 2
+// Pass integer masks (such as Precision::DAY) with older versions
 ```
 
 Convert Spatie precision mask into a `CarbonInterval`.

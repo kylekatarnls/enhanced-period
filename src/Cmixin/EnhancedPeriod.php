@@ -7,9 +7,10 @@ use Carbon\CarbonInterval;
 use Carbon\CarbonPeriod;
 use DateInterval;
 use DatePeriod;
+use EnhancedPeriod\Enum\Boundaries;
 use Generator;
+use ReflectionMethod;
 use RuntimeException;
-use Spatie\Period\Boundaries;
 use Spatie\Period\Period;
 use Spatie\Period\PeriodCollection;
 use Spatie\Period\PeriodDuration;
@@ -19,12 +20,21 @@ use Throwable;
 trait EnhancedPeriod
 {
     private static $maskUnits = [
-        'year'   => Precision::YEAR,
-        'month'  => Precision::MONTH,
-        'day'    => Precision::DAY,
-        'hour'   => Precision::HOUR,
-        'minute' => Precision::MINUTE,
-        'second' => Precision::SECOND,
+        'year'   => 0b100000,
+        'month'  => 0b110000,
+        'day'    => 0b111000,
+        'hour'   => 0b111100,
+        'minute' => 0b111110,
+        'second' => 0b111111,
+    ];
+
+    private static $unitCode = [
+        'y' => 'year',
+        'm' => 'month',
+        'd' => 'day',
+        'h' => 'hour',
+        'i' => 'minute',
+        's' => 'second',
     ];
 
     /**
@@ -34,7 +44,7 @@ trait EnhancedPeriod
      */
     public function toEnhancedPeriod(): Period
     {
-        $mask = static::convertDateIntervalToPrecisionMask($this->getDateInterval());
+        $mask = static::convertDateIntervalToPrecision($this->getDateInterval());
         /** @var CarbonPeriod $period */
         $period = $this->copy()->floor();
         $end = $period->calculateEnd();
@@ -43,8 +53,7 @@ trait EnhancedPeriod
             $period->getStartDate()->toImmutable(),
             $end ? $end->toImmutable() : null,
             $mask,
-            ($period->isStartExcluded() ? Boundaries::EXCLUDE_START : 0) |
-            ($period->isEndExcluded() ? Boundaries::EXCLUDE_END : 0)
+            $this->getBoundaries($period)
         );
     }
 
@@ -67,13 +76,43 @@ trait EnhancedPeriod
         }
 
         return new static(
-            $period->getStart(),
-            $period->getEnd(),
-            static::convertPrecisionMaskToDateInterval($period->getPrecisionMask()),
+            self::getPeriodStart($period),
+            self::getPeriodEnd($period),
+            static::convertPrecisionToDateInterval(self::getPeriodPrecision($period)),
             ($mutable ? 0 : static::IMMUTABLE) |
-            ($period->startExcluded() ? static::EXCLUDE_START_DATE : 0) |
-            ($period->endExcluded() ? static::EXCLUDE_END_DATE : 0)
+            (self::getPeriodStartExcluded($period) ? static::EXCLUDE_START_DATE : 0) |
+            (self::getPeriodEndExcluded($period) ? static::EXCLUDE_END_DATE : 0)
         );
+    }
+
+    private static function callPeriod($period, $newMethod, $oldMethod)
+    {
+        return method_exists($period, $newMethod) ? $period->$newMethod() : $period->$oldMethod();
+    }
+
+    private static function getPeriodStart($period)
+    {
+        return self::callPeriod($period, 'getStart', 'start');
+    }
+
+    private static function getPeriodEnd($period)
+    {
+        return self::callPeriod($period, 'getEnd', 'end');
+    }
+
+    private static function getPeriodPrecision($period)
+    {
+        return self::callPeriod($period, 'precision', 'getPrecisionMask');
+    }
+
+    private static function getPeriodStartExcluded($period): bool
+    {
+        return self::callPeriod($period, 'isStartExcluded', 'startExcluded');
+    }
+
+    private static function getPeriodEndExcluded($period): bool
+    {
+        return self::callPeriod($period, 'isEndExcluded', 'endExcluded');
     }
 
     /**
@@ -115,24 +154,66 @@ trait EnhancedPeriod
      *
      * @param DateInterval $interval
      *
-     * @return int
+     * @return string
      */
-    public static function convertDateIntervalToPrecisionMask(DateInterval $interval): int
+    public static function convertDateIntervalToUnit(DateInterval $interval): string
     {
-        $mask = null;
+        $maskUnit = null;
 
         foreach (self::getIntervalUnits($interval) as $unit => $quantity) {
-            if ($quantity !== 1 || $mask) {
+            if ($quantity !== 1 || $maskUnit) {
                 throw new RuntimeException(
                     'Only periods with 1 year, 1 month, 1 day, 1 hour, 1 minute or 1 second interval can be'.
                     ' converted to '.Period::class
                 );
             }
 
-            $mask = $unit;
+            $maskUnit = $unit;
         }
 
-        return $mask ?: Precision::DAY;
+        return $maskUnit ?? 'day';
+    }
+
+    /**
+     * Convert DateInterval into spatie/period precision mask.
+     *
+     * @param DateInterval $interval
+     *
+     * @return int
+     */
+    public static function convertDateIntervalToPrecisionMask(DateInterval $interval): int
+    {
+        return self::$maskUnits[static::convertDateIntervalToUnit($interval)];
+    }
+
+    /**
+     * Convert DateInterval into spatie/period precision mask.
+     *
+     * @param DateInterval $interval
+     *
+     * @return int|Precision
+     */
+    public static function convertDateIntervalToPrecision(DateInterval $interval)
+    {
+        return static::convertUnitToPrecision(static::convertDateIntervalToUnit($interval));
+    }
+
+    /**
+     * Convert unit string into spatie/period precision mask.
+     *
+     * @param string $maskUnit
+     *
+     * @return int|Precision
+     */
+    private static function convertUnitToPrecision(string $maskUnit)
+    {
+        // @codeCoverageIgnoreStart
+        if (class_exists(Precision::class)) {
+            return call_user_func([Precision::class, strtoupper($maskUnit)]);
+        }
+
+        return self::$maskUnits[$maskUnit];
+        // @codeCoverageIgnoreEnd
     }
 
     /**
@@ -151,6 +232,34 @@ trait EnhancedPeriod
         }
 
         return CarbonInterval::day();
+    }
+
+    /**
+     * Convert spatie/period precision mask into DateInterval.
+     *
+     * @param \Spatie\Period\Precision|string|int $precision
+     *
+     * @return CarbonInterval
+     */
+    public static function convertPrecisionToDateInterval($precision): CarbonInterval
+    {
+        if (is_object($precision) && method_exists($precision, 'intervalName')) {
+            $precision = $precision->intervalName();
+        }
+
+        if (is_string($precision)) {
+            if (isset(self::$unitCode[$precision])) {
+                $precision = self::$unitCode[$precision];
+            }
+
+            try {
+                return CarbonInterval::$precision();
+            } catch (BadMethodCallException $exception) {
+                // try int mask
+            }
+        }
+
+        return static::convertPrecisionMaskToDateInterval((int) $precision);
     }
 
     /**
@@ -241,10 +350,11 @@ trait EnhancedPeriod
      */
     public function overlapAny(...$periods): array
     {
+        $enhancedPeriod = $this->toEnhancedPeriod();
+        $method = method_exists($enhancedPeriod, 'overlapAny') ? 'overlapAny' : 'overlap';
+
         return static::fromPeriodCollection(
-            $this->toEnhancedPeriod()->overlap(
-                ...$this->resolvePeriodArgumentsList($periods)
-            ),
+            $enhancedPeriod->$method(...$this->resolvePeriodArgumentsList($periods)),
             !($this->getOptions() & CarbonPeriod::IMMUTABLE)
         );
     }
@@ -265,10 +375,12 @@ trait EnhancedPeriod
     public function overlapAll(...$periods): ?CarbonPeriod
     {
         try {
+            $enhancedPeriod = $this->toEnhancedPeriod();
+            $overlapAll = new ReflectionMethod($enhancedPeriod, 'overlapAll');
+            $overlapAll->setAccessible(true);
+
             return static::fromNullableEnhancedPeriod(
-                $this->toEnhancedPeriod()->overlapAll(
-                    ...$this->resolvePeriodArgumentsList($periods)
-                ),
+                $overlapAll->invokeArgs($enhancedPeriod, $this->resolvePeriodArgumentsList($periods)),
                 !($this->getOptions() & CarbonPeriod::IMMUTABLE)
             );
         } catch (Throwable $e) {
@@ -290,10 +402,12 @@ trait EnhancedPeriod
      */
     public function diffAny($period, ...$arguments): array
     {
+        $enhancedPeriod = $this->toEnhancedPeriod();
+
         return static::fromPeriodCollection(
             $this->callEnhancedPeriodMethods(
-                $this->toEnhancedPeriod(),
-                ['diffAny', 'diffSingle'],
+                $enhancedPeriod,
+                ['diffAny', method_exists($enhancedPeriod, 'diffSymmetric') ? 'diffSymmetric' : 'diffSingle'],
                 [$this->resolveEnhancedPeriod($period, ...$arguments)]
             ),
             !($this->getOptions() & CarbonPeriod::IMMUTABLE)
@@ -316,8 +430,11 @@ trait EnhancedPeriod
      */
     public function diff(...$periods): array
     {
+        $enhancedPeriod = $this->toEnhancedPeriod();
+        $method = method_exists($enhancedPeriod, 'subtract') ? 'subtract' : 'diff';
+
         return static::fromPeriodCollection(
-            $this->toEnhancedPeriod()->diff(
+            $enhancedPeriod->$method(
                 ...$this->resolvePeriodArgumentsList($periods)
             ),
             !($this->getOptions() & CarbonPeriod::IMMUTABLE)
@@ -349,16 +466,11 @@ trait EnhancedPeriod
 
     private static function getIntervalUnits(DateInterval $interval): Generator
     {
-        $intervals = [];
-        [
-            $intervals[Precision::YEAR],
-            $intervals[Precision::MONTH],
-            $intervals[Precision::DAY],
-            $intervals[Precision::HOUR],
-            $intervals[Precision::MINUTE],
-            $intervals[Precision::SECOND],
-        ] = array_map('intval', explode(' ', CarbonInterval::instance($interval)
-            ->format('%y %m %d %h %i %s')));
+        $intervals = array_combine(
+            array_keys(self::$maskUnits),
+            array_map('intval', explode(' ', CarbonInterval::instance($interval)
+                ->format('%y %m %d %h %i %s')))
+        );
         $mask = null;
 
         foreach ($intervals as $unit => $quantity) {
@@ -401,5 +513,25 @@ trait EnhancedPeriod
         return array_map(function ($period) {
             return $this->resolveEnhancedPeriod(...(is_array($period) ? $period : [$period]));
         }, $periods);
+    }
+
+    private function getBoundaries(CarbonPeriod $period)
+    {
+        $startExcluded = $period->isStartExcluded();
+        $endExcluded = $period->isEndExcluded();
+
+        if ($startExcluded && $endExcluded) {
+            return Boundaries::EXCLUDE_ALL()->value();
+        }
+
+        if ($startExcluded) {
+            return Boundaries::EXCLUDE_START()->value();
+        }
+
+        if ($endExcluded) {
+            return Boundaries::EXCLUDE_END()->value();
+        }
+
+        return Boundaries::EXCLUDE_NONE()->value();
     }
 }

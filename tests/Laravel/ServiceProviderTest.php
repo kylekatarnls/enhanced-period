@@ -9,7 +9,7 @@ use Spatie\Period\Period;
 
 class ServiceProviderTest extends TestCase
 {
-    public function testBoot()
+    public function testBoot(): void
     {
         include_once __DIR__.'/ServiceProvider.php';
         $service = new ServiceProvider();
