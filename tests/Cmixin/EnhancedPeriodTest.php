@@ -15,6 +15,7 @@ use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Spatie\Period\Period;
+use Spatie\Period\PeriodCollection;
 use Spatie\Period\PeriodDuration;
 
 class EnhancedPeriodTest extends TestCase
@@ -27,7 +28,7 @@ class EnhancedPeriodTest extends TestCase
         CarbonPeriod::mixin(EnhancedPeriod::class);
     }
 
-    public function testReadmeExample()
+    public function testReadmeExample(): void
     {
         $a = CarbonPeriod::create('2018-01-01', '2018-01-10')->toEnhancedPeriod();
         $b = CarbonPeriod::create('2018-01-15', '2018-01-31')->toEnhancedPeriod();
@@ -37,7 +38,7 @@ class EnhancedPeriodTest extends TestCase
         $this->assertSame('Every 1 day from 2018-01-11 to 2018-01-14', $output);
     }
 
-    public function testToEnhancedPeriodException()
+    public function testToEnhancedPeriodException(): void
     {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Only periods with 1 year, 1 month, 1 day, 1 hour, 1 minute or 1 second '.
@@ -46,7 +47,7 @@ class EnhancedPeriodTest extends TestCase
         CarbonPeriod::hours(2)->minutes(40)->toEnhancedPeriod();
     }
 
-    public function testToEnhancedPeriod()
+    public function testToEnhancedPeriod(): void
     {
         $period = CarbonPeriod::hours()
             ->since('2019-09-01 08:02')
@@ -120,7 +121,7 @@ class EnhancedPeriodTest extends TestCase
         $this->assertFalse($endIncluded);
     }
 
-    public function testFromEnhancedPeriod()
+    public function testFromEnhancedPeriod(): void
     {
         $period = Period::make('2019-09-01', '2019-09-12');
         $period = CarbonPeriod::fromEnhancedPeriod($period);
@@ -128,9 +129,16 @@ class EnhancedPeriodTest extends TestCase
         $this->assertSame('2019-09-01 00:00:00', $period->getStartDate()->format('Y-m-d H:i:s'));
         $this->assertSame('2019-09-12 00:00:00', $period->getEndDate()->format('Y-m-d H:i:s'));
         $this->assertSame('00-00-01 00:00:00', $period->getDateInterval()->format('%Y-%M-%D %H:%I:%S'));
+
+        $period = Period::make('2019-09-01', '2019-09-12');
+        $period = CarbonPeriod::fromEnhancedPeriod(new PeriodCollection($period));
+
+        $this->assertSame('2019-09-01 00:00:00', $period->getStartDate()->format('Y-m-d H:i:s'));
+        $this->assertSame('2019-09-12 00:00:00', $period->getEndDate()->format('Y-m-d H:i:s'));
+        $this->assertSame('00-00-01 00:00:00', $period->getDateInterval()->format('%Y-%M-%D %H:%I:%S'));
     }
 
-    public function testNullableEnhancedPeriod()
+    public function testNullableEnhancedPeriod(): void
     {
         $period = Period::make('2019-09-01', '2019-09-12');
         $period = CarbonPeriod::fromNullableEnhancedPeriod($period);
@@ -142,7 +150,7 @@ class EnhancedPeriodTest extends TestCase
         $this->assertNull(CarbonPeriod::fromNullableEnhancedPeriod(null));
     }
 
-    public function testDurationException()
+    public function testDurationException(): void
     {
         $this->expectException(BadMethodCallException::class);
         $this->expectExceptionMessage('duration() method is only available since spatie/period 2.0.');
@@ -150,7 +158,7 @@ class EnhancedPeriodTest extends TestCase
         CarbonPeriodWithSpatie1::create('2019-09-01', '2019-09-12')->duration();
     }
 
-    public function testDuration()
+    public function testDuration(): void
     {
         $this->assertInstanceOf(
             PeriodDuration::class,
@@ -158,7 +166,7 @@ class EnhancedPeriodTest extends TestCase
         );
     }
 
-    public function getMaskAndIntervalParis()
+    public function getMaskAndIntervalParis(): array
     {
         return [
             [
@@ -191,7 +199,7 @@ class EnhancedPeriodTest extends TestCase
     /**
      * @dataProvider getMaskAndIntervalParis
      */
-    public function testConvertPrecisionMaskToDateInterval(int $mask, CarbonInterval $interval)
+    public function testConvertPrecisionMaskToDateInterval(int $mask, CarbonInterval $interval): void
     {
         $this->assertSame($interval->totalSeconds, CarbonPeriod::convertPrecisionMaskToDateInterval($mask)->totalSeconds);
     }
@@ -199,12 +207,12 @@ class EnhancedPeriodTest extends TestCase
     /**
      * @dataProvider getMaskAndIntervalParis
      */
-    public function testConvertDateIntervalToPrecisionMask(int $mask, CarbonInterval $interval)
+    public function testConvertDateIntervalToPrecisionMask(int $mask, CarbonInterval $interval): void
     {
         $this->assertSame($mask, CarbonPeriod::convertDateIntervalToPrecisionMask($interval));
     }
 
-    public function testDefaultConversions()
+    public function testDefaultConversions(): void
     {
         $this->assertSame(
             24 * 3600,
@@ -215,7 +223,7 @@ class EnhancedPeriodTest extends TestCase
         $this->assertTrue(Precision::DAY()->equals(CarbonPeriod::convertDateIntervalToPrecision($now->diff($now))));
     }
 
-    public function testLength()
+    public function testLength(): void
     {
         $this->assertSame(
             8,
@@ -226,7 +234,7 @@ class EnhancedPeriodTest extends TestCase
         );
     }
 
-    public function testOverlapsWith()
+    public function testOverlapsWith(): void
     {
         $this->assertTrue(
             CarbonPeriod::hours()
@@ -273,7 +281,7 @@ class EnhancedPeriodTest extends TestCase
         );
     }
 
-    public function testTouchesWith()
+    public function testTouchesWith(): void
     {
         $this->assertTrue(
             CarbonPeriod::hours()
@@ -320,7 +328,7 @@ class EnhancedPeriodTest extends TestCase
         );
     }
 
-    public function testOverlap()
+    public function testOverlap(): void
     {
         $a = CarbonPeriod::create('2018-01-01', '2018-01-15');
         $b = CarbonPeriod::create('2018-01-10', '2018-01-30');
@@ -339,7 +347,7 @@ class EnhancedPeriodTest extends TestCase
         $this->assertTrue($result->equalTo($overlapPeriod));
     }
 
-    public function testOverlapAny()
+    public function testOverlapAny(): void
     {
         $a = CarbonPeriod::create('2018-01-01', '2018-01-31');
         $b = CarbonPeriod::create('2018-02-10', '2018-02-20');
@@ -355,7 +363,7 @@ class EnhancedPeriodTest extends TestCase
         $this->assertTrue($overlapPeriods[2]->equalTo(CarbonPeriod::create('2018-03-01', '2018-03-10')));
     }
 
-    public function testOverlapAll()
+    public function testOverlapAll(): void
     {
         $a = CarbonPeriod::create('2018-01-01', '2018-01-31');
         $b = CarbonPeriod::create('2018-01-10', '2018-01-15');
@@ -374,7 +382,7 @@ class EnhancedPeriodTest extends TestCase
         $this->assertNull($overlap);
     }
 
-    public function testOverlapAllVersion1()
+    public function testOverlapAllVersion1(): void
     {
         $a = CarbonPeriodWithSpatie1::create('2018-01-01', '2018-02-01');
         $b = CarbonPeriodWithSpatie1::create('2018-05-10', '2018-06-01');
@@ -385,7 +393,7 @@ class EnhancedPeriodTest extends TestCase
         $this->assertNull($overlap);
     }
 
-    public function testOverlapAllVersion1Exception()
+    public function testOverlapAllVersion1Exception(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Fake error');
@@ -396,7 +404,7 @@ class EnhancedPeriodTest extends TestCase
         $a->overlapAll($b);
     }
 
-    public function testDiffAny()
+    public function testDiffAny(): void
     {
         $a = CarbonPeriod::create('2018-01-01', '2018-01-15');
         $b = CarbonPeriod::create('2018-01-10', '2018-01-30');
@@ -407,7 +415,7 @@ class EnhancedPeriodTest extends TestCase
         $this->assertTrue($diffs[1]->equalTo(CarbonPeriod::create('2018-01-16', '2018-01-30')));
     }
 
-    public function testDiff()
+    public function testDiff(): void
     {
         $a = CarbonPeriod::create('2018-01-01', '2018-01-31');
         $b = CarbonPeriod::create('2018-02-10', '2018-02-20');
@@ -422,7 +430,7 @@ class EnhancedPeriodTest extends TestCase
         $this->assertTrue($diff[0]->equalTo(CarbonPeriod::create('2018-02-01', '2018-02-09')));
     }
 
-    public function testGap()
+    public function testGap(): void
     {
         $a = CarbonPeriod::create('2018-01-01', '2018-01-10');
         $b = CarbonPeriod::create('2018-01-15', '2018-01-31');
@@ -451,5 +459,21 @@ class EnhancedPeriodTest extends TestCase
         $gap = $a->gap($b);
 
         $this->assertNull($gap);
+    }
+
+    public function testConvertDateIntervalToPrecision(): void
+    {
+        $this->assertEquals(
+            Precision::DAY()->value(),
+            EnhancedPeriod::convertDateIntervalToPrecision(new DateInterval('PT0S'))
+        );
+    }
+
+    public function testConvertPrecisionToDateInterval(): void
+    {
+        $this->assertSame(
+            24 * 3600,
+            (int) EnhancedPeriod::convertPrecisionToDateInterval('nope')->totalSeconds
+        );
     }
 }

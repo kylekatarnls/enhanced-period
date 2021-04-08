@@ -15,6 +15,7 @@ use RuntimeException;
 use Spatie\Period\Period;
 use Spatie\Period\PeriodCollection;
 use Spatie\Period\PeriodDuration;
+use Spatie\Period\Precision;
 use Throwable;
 
 trait EnhancedPeriod
@@ -191,7 +192,7 @@ trait EnhancedPeriod
      *
      * @param DateInterval $interval
      *
-     * @return int|\Spatie\Period\Precision
+     * @return int|Precision
      */
     public static function convertDateIntervalToPrecision(DateInterval $interval)
     {
@@ -203,15 +204,17 @@ trait EnhancedPeriod
      *
      * @param string $maskUnit
      *
-     * @return int|\Spatie\Period\Precision
+     * @return int|Precision
      */
     private static function convertUnitToPrecision(string $maskUnit)
     {
-        if (class_exists(\Spatie\Period\Precision::class)) {
-            return call_user_func([\Spatie\Period\Precision::class, strtoupper($maskUnit)]);
+        // @codeCoverageIgnoreStart
+        if (class_exists(Precision::class)) {
+            return call_user_func([Precision::class, strtoupper($maskUnit)]);
         }
 
         return self::$maskUnits[$maskUnit];
+        // @codeCoverageIgnoreEnd
     }
 
     /**
@@ -257,7 +260,7 @@ trait EnhancedPeriod
             }
         }
 
-        return static::convertPrecisionMaskToDateInterval($precision);
+        return static::convertPrecisionMaskToDateInterval((int) $precision);
     }
 
     /**
