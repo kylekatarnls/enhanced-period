@@ -85,49 +85,34 @@ trait EnhancedPeriod
         );
     }
 
+    private static function callPeriod($period, $newMethod, $oldMethod)
+    {
+        return method_exists($period, $newMethod) ? $period->$newMethod() : $period->$oldMethod();
+    }
+
     private static function getPeriodStart($period)
     {
-        if (method_exists($period, 'getStart')) {
-            return $period->getStart();
-        }
-
-        return $period->start();
+        return self::callPeriod($period, 'getStart', 'start');
     }
 
     private static function getPeriodEnd($period)
     {
-        if (method_exists($period, 'getEnd')) {
-            return $period->getEnd();
-        }
-
-        return $period->end();
+        return self::callPeriod($period, 'getEnd', 'end');
     }
 
     private static function getPeriodPrecision($period)
     {
-        if (method_exists($period, 'getPrecisionMask')) {
-            return $period->getPrecisionMask();
-        }
-
-        return $period->precision();
+        return self::callPeriod($period, 'precision', 'getPrecisionMask');
     }
 
     private static function getPeriodStartExcluded($period): bool
     {
-        if (method_exists($period, 'startExcluded')) {
-            return $period->startExcluded();
-        }
-
-        return $period->isStartExcluded();
+        return self::callPeriod($period, 'isStartExcluded', 'startExcluded');
     }
 
     private static function getPeriodEndExcluded($period): bool
     {
-        if (method_exists($period, 'endExcluded')) {
-            return $period->endExcluded();
-        }
-
-        return $period->isEndExcluded();
+        return self::callPeriod($period, 'isEndExcluded', 'endExcluded');
     }
 
     /**

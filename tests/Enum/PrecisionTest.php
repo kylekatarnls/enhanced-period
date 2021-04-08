@@ -2,9 +2,9 @@
 
 namespace Tests\Carbon\Enum;
 
-use Spatie\Period\Precision as SpatiePrecision;
 use EnhancedPeriod\Enum\Precision;
 use PHPUnit\Framework\TestCase;
+use Spatie\Period\Precision as SpatiePrecision;
 
 class PrecisionTest extends TestCase
 {
