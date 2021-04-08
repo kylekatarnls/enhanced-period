@@ -21,7 +21,7 @@ abstract class AbstractEnum
     {
         if (!isset($this->value)) {
             $method = [$this->wrap, $this->name];
-            $this->value = is_callable($method) ? $method() : constant($this->wrap . '::' . $this->name);
+            $this->value = is_callable($method) ? $method() : constant($this->wrap.'::'.$this->name);
         }
 
         return $this->value;
@@ -39,6 +39,6 @@ abstract class AbstractEnum
             return $other->equals($value);
         }
 
-        return $value == $other;
+        return $value === $other;
     }
 }
