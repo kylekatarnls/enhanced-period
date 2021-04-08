@@ -10,12 +10,12 @@ use Cmixin\EnhancedPeriod;
 use DateInterval;
 use DatePeriod;
 use DateTimeImmutable;
+use EnhancedPeriod\Enum\Precision;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Spatie\Period\Period;
 use Spatie\Period\PeriodDuration;
-use Spatie\Period\Precision;
 
 class EnhancedPeriodTest extends TestCase
 {
@@ -54,11 +54,21 @@ class EnhancedPeriodTest extends TestCase
             ->toEnhancedPeriod();
 
         $this->assertInstanceOf(Period::class, $period);
-        $this->assertSame(Precision::HOUR, $period->getPrecisionMask());
-        $this->assertSame('2019-09-01 08:00', $period->getStart()->format('Y-m-d H:i'));
-        $this->assertSame('2019-09-01 15:00', $period->getEnd()->format('Y-m-d H:i'));
-        $this->assertTrue($period->startIncluded());
-        $this->assertTrue($period->endIncluded());
+        method_exists($period, 'getPrecisionMask')
+            ? $this->assertSame(0b111100, $period->getPrecisionMask())
+            : $this->assertEquals(\Spatie\Period\Precision::HOUR(), $period->precision());
+        $start = method_exists($period, 'getStart') ? $period->getStart() : $period->start();
+        $this->assertSame('2019-09-01 08:00', $start->format('Y-m-d H:i'));
+        $end = method_exists($period, 'getEnd') ? $period->getEnd() : $period->end();
+        $this->assertSame('2019-09-01 15:00', $end->format('Y-m-d H:i'));
+        $startIncluded = method_exists($period, 'isStartIncluded')
+            ? $period->isStartIncluded()
+            : $period->startIncluded();
+        $endIncluded = method_exists($period, 'isEndIncluded')
+            ? $period->isEndIncluded()
+            : $period->endIncluded();
+        $this->assertTrue($startIncluded);
+        $this->assertTrue($endIncluded);
 
         $period = CarbonPeriod::hours()
             ->since('2019-09-01 08:02')
@@ -66,8 +76,15 @@ class EnhancedPeriodTest extends TestCase
             ->excludeStartDate()
             ->toEnhancedPeriod();
 
-        $this->assertFalse($period->startIncluded());
-        $this->assertTrue($period->endIncluded());
+        $startIncluded = method_exists($period, 'isStartIncluded')
+            ? $period->isStartIncluded()
+            : $period->startIncluded();
+        $endIncluded = method_exists($period, 'isEndIncluded')
+            ? $period->isEndIncluded()
+            : $period->endIncluded();
+
+        $this->assertFalse($startIncluded);
+        $this->assertTrue($endIncluded);
 
         $period = CarbonPeriod::hours()
             ->since('2019-09-01 08:02')
@@ -75,8 +92,15 @@ class EnhancedPeriodTest extends TestCase
             ->excludeEndDate()
             ->toEnhancedPeriod();
 
-        $this->assertTrue($period->startIncluded());
-        $this->assertFalse($period->endIncluded());
+        $startIncluded = method_exists($period, 'isStartIncluded')
+            ? $period->isStartIncluded()
+            : $period->startIncluded();
+        $endIncluded = method_exists($period, 'isEndIncluded')
+            ? $period->isEndIncluded()
+            : $period->endIncluded();
+
+        $this->assertTrue($startIncluded);
+        $this->assertFalse($endIncluded);
 
         $period = CarbonPeriod::hours()
             ->since('2019-09-01 08:02')
@@ -85,8 +109,15 @@ class EnhancedPeriodTest extends TestCase
             ->excludeEndDate()
             ->toEnhancedPeriod();
 
-        $this->assertFalse($period->startIncluded());
-        $this->assertFalse($period->endIncluded());
+        $startIncluded = method_exists($period, 'isStartIncluded')
+            ? $period->isStartIncluded()
+            : $period->startIncluded();
+        $endIncluded = method_exists($period, 'isEndIncluded')
+            ? $period->isEndIncluded()
+            : $period->endIncluded();
+
+        $this->assertFalse($startIncluded);
+        $this->assertFalse($endIncluded);
     }
 
     public function testFromEnhancedPeriod()
@@ -131,27 +162,27 @@ class EnhancedPeriodTest extends TestCase
     {
         return [
             [
-                Precision::YEAR,
+                0b100000,
                 CarbonInterval::year(),
             ],
             [
-                Precision::MONTH,
+                0b110000,
                 CarbonInterval::month(),
             ],
             [
-                Precision::DAY,
+                0b111000,
                 CarbonInterval::day(),
             ],
             [
-                Precision::HOUR,
+                0b111100,
                 CarbonInterval::hour(),
             ],
             [
-                Precision::MINUTE,
+                0b111110,
                 CarbonInterval::minute(),
             ],
             [
-                Precision::SECOND,
+                0b111111,
                 CarbonInterval::second(),
             ],
         ];
@@ -175,9 +206,13 @@ class EnhancedPeriodTest extends TestCase
 
     public function testDefaultConversions()
     {
-        $this->assertSame(24 * 3600, CarbonPeriod::convertPrecisionMaskToDateInterval(0b101)->totalSeconds);
+        $this->assertSame(
+            24 * 3600,
+            (int) round(CarbonPeriod::convertPrecisionMaskToDateInterval(0b101)->totalSeconds)
+        );
         $now = Carbon::now();
-        $this->assertSame(Precision::DAY, CarbonPeriod::convertDateIntervalToPrecisionMask($now->diff($now)));
+        $this->assertSame(0b111000, CarbonPeriod::convertDateIntervalToPrecisionMask($now->diff($now)));
+        $this->assertTrue(Precision::DAY()->equals(CarbonPeriod::convertDateIntervalToPrecision($now->diff($now))));
     }
 
     public function testLength()
@@ -220,7 +255,7 @@ class EnhancedPeriodTest extends TestCase
                 ->since('2019-09-01 08:02')
                 ->until('2019-09-01 15:03')
                 ->overlapsWith(
-                    Period::make('2019-09-01 15:10:00', '2019-09-01 18:03:00', Precision::HOUR)
+                    Period::make('2019-09-01 15:10:00', '2019-09-01 18:03:00', Precision::HOUR()->value())
                 )
         );
 
@@ -267,7 +302,7 @@ class EnhancedPeriodTest extends TestCase
                 ->since('2019-09-01 08:02')
                 ->until('2019-09-01 15:03')
                 ->touchesWith(
-                    Period::make('2019-09-01 16:00:00', '2019-09-01 18:03:00', Precision::HOUR)
+                    Period::make('2019-09-01 16:00:00', '2019-09-01 18:03:00', Precision::HOUR()->value())
                 )
         );
 

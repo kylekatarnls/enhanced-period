@@ -4,8 +4,8 @@ namespace Tests\Cmixin;
 
 use Carbon\CarbonPeriod;
 use Cmixin\EnhancedPeriod;
+use EnhancedPeriod\Enum\Boundaries;
 use InvalidArgumentException;
-use Spatie\Period\Boundaries;
 use Spatie\Period\Period;
 
 class PeriodWithError extends Period
@@ -42,8 +42,27 @@ class CarbonPeriodWithSpatie1 extends CarbonPeriod
             $period->getStartDate()->toImmutable(),
             $end ? $end->toImmutable() : null,
             $mask,
-            ($period->isStartExcluded() ? Boundaries::EXCLUDE_START : 0) |
-            ($period->isEndExcluded() ? Boundaries::EXCLUDE_END : 0)
+            $this->getBoundaries($period)
         );
+    }
+
+    private function getBoundaries(CarbonPeriod $period)
+    {
+        $startExcluded = $period->isStartExcluded();
+        $endExcluded = $period->isEndExcluded();
+
+        if ($startExcluded && $endExcluded) {
+            return Boundaries::EXCLUDE_ALL()->value();
+        }
+
+        if ($startExcluded) {
+            return Boundaries::EXCLUDE_START()->value();
+        }
+
+        if ($endExcluded) {
+            return Boundaries::EXCLUDE_END()->value();
+        }
+
+        return Boundaries::EXCLUDE_NONE()->value();
     }
 }
