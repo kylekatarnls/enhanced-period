@@ -44,7 +44,7 @@ jobs:
       - name: Install dependencies
         if: steps.composer-cache.outputs.cache-hit != 'true'
         run: |
-          ${{ matrix.php >= 8.2 && 'composer require --no-update nesbot/carbon:^2.62.1 --no-interaction --dev;' || '' }}
+          ${{ matrix.php >= 8.0 && 'composer require --no-update nesbot/carbon:^2.62.1 --no-interaction --dev;' || '' }}
           composer update --prefer-dist --prefer-${{ matrix.setup }} --no-progress ${{ matrix.php >= 8.1 && '--ignore-platform-req=php' || '' }}
 
       - name: Run test suite
