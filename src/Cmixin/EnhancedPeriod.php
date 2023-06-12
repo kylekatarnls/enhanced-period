@@ -7,10 +7,9 @@ use Carbon\CarbonInterval;
 use Carbon\CarbonPeriod;
 use DateInterval;
 use DatePeriod;
+use EnhancedPeriod\Converter;
 use EnhancedPeriod\Enum\Boundaries;
-use Generator;
 use ReflectionMethod;
-use RuntimeException;
 use Spatie\Period\Period;
 use Spatie\Period\PeriodCollection;
 use Spatie\Period\PeriodDuration;
@@ -19,24 +18,6 @@ use Throwable;
 
 trait EnhancedPeriod
 {
-    private static $maskUnits = [
-        'year'   => 0b100000,
-        'month'  => 0b110000,
-        'day'    => 0b111000,
-        'hour'   => 0b111100,
-        'minute' => 0b111110,
-        'second' => 0b111111,
-    ];
-
-    private static $unitCode = [
-        'y' => 'year',
-        'm' => 'month',
-        'd' => 'day',
-        'h' => 'hour',
-        'i' => 'minute',
-        's' => 'second',
-    ];
-
     /**
      * Convert the current CarbonPeriod instance into Spatie\Period\Period instance.
      *
@@ -158,20 +139,7 @@ trait EnhancedPeriod
      */
     public static function convertDateIntervalToUnit(DateInterval $interval): string
     {
-        $maskUnit = null;
-
-        foreach (self::getIntervalUnits($interval) as $unit => $quantity) {
-            if ($quantity !== 1 || $maskUnit) {
-                throw new RuntimeException(
-                    'Only periods with 1 year, 1 month, 1 day, 1 hour, 1 minute or 1 second interval can be'.
-                    ' converted to '.Period::class
-                );
-            }
-
-            $maskUnit = $unit;
-        }
-
-        return $maskUnit ?? 'day';
+        return (new Converter())->convertDateIntervalToUnit($interval);
     }
 
     /**
@@ -183,7 +151,7 @@ trait EnhancedPeriod
      */
     public static function convertDateIntervalToPrecisionMask(DateInterval $interval): int
     {
-        return self::$maskUnits[static::convertDateIntervalToUnit($interval)];
+        return (new Converter())->convertDateIntervalToPrecisionMask($interval);
     }
 
     /**
@@ -195,25 +163,7 @@ trait EnhancedPeriod
      */
     public static function convertDateIntervalToPrecision(DateInterval $interval)
     {
-        return static::convertUnitToPrecision(static::convertDateIntervalToUnit($interval));
-    }
-
-    /**
-     * Convert unit string into spatie/period precision mask.
-     *
-     * @param string $maskUnit
-     *
-     * @return int|Precision
-     */
-    private static function convertUnitToPrecision(string $maskUnit)
-    {
-        // @codeCoverageIgnoreStart
-        if (class_exists(Precision::class)) {
-            return call_user_func([Precision::class, strtoupper($maskUnit)]);
-        }
-
-        return self::$maskUnits[$maskUnit];
-        // @codeCoverageIgnoreEnd
+        return (new Converter())->convertDateIntervalToPrecision($interval);
     }
 
     /**
@@ -225,13 +175,7 @@ trait EnhancedPeriod
      */
     public static function convertPrecisionMaskToDateInterval(int $precisionMask): CarbonInterval
     {
-        foreach (self::$maskUnits as $method => $mask) {
-            if ($precisionMask === $mask) {
-                return CarbonInterval::$method();
-            }
-        }
-
-        return CarbonInterval::day();
+        return (new Converter())->convertPrecisionMaskToDateInterval($precisionMask);
     }
 
     /**
@@ -243,23 +187,7 @@ trait EnhancedPeriod
      */
     public static function convertPrecisionToDateInterval($precision): CarbonInterval
     {
-        if (is_object($precision) && method_exists($precision, 'intervalName')) {
-            $precision = $precision->intervalName();
-        }
-
-        if (is_string($precision)) {
-            if (isset(self::$unitCode[$precision])) {
-                $precision = self::$unitCode[$precision];
-            }
-
-            try {
-                return CarbonInterval::$precision();
-            } catch (BadMethodCallException $exception) {
-                // try int mask
-            }
-        }
-
-        return static::convertPrecisionMaskToDateInterval((int) $precision);
+        return (new Converter())->convertPrecisionToDateInterval($precision);
     }
 
     /**
@@ -462,22 +390,6 @@ trait EnhancedPeriod
             $this->toEnhancedPeriod()->gap($this->resolveEnhancedPeriod($period, ...$arguments)),
             !($this->getOptions() & CarbonPeriod::IMMUTABLE)
         );
-    }
-
-    private static function getIntervalUnits(DateInterval $interval): Generator
-    {
-        $intervals = array_combine(
-            array_keys(self::$maskUnits),
-            array_map('intval', explode(' ', CarbonInterval::instance($interval)
-                ->format('%y %m %d %h %i %s')))
-        );
-        $mask = null;
-
-        foreach ($intervals as $unit => $quantity) {
-            if ($quantity !== 0) {
-                yield $unit => $quantity;
-            }
-        }
     }
 
     private function resolveEnhancedPeriod($period, ...$arguments): Period

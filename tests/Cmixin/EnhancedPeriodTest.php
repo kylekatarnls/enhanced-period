@@ -465,7 +465,7 @@ class EnhancedPeriodTest extends TestCase
     {
         $this->assertEquals(
             Precision::DAY()->value(),
-            EnhancedPeriod::convertDateIntervalToPrecision(new DateInterval('PT0S'))
+            @EnhancedPeriod::convertDateIntervalToPrecision(new DateInterval('PT0S'))
         );
     }
 
@@ -473,7 +473,15 @@ class EnhancedPeriodTest extends TestCase
     {
         $this->assertSame(
             24 * 3600,
-            (int) EnhancedPeriod::convertPrecisionToDateInterval('nope')->totalSeconds
+            (int) @EnhancedPeriod::convertPrecisionToDateInterval('nope')->totalSeconds
+        );
+    }
+
+    public function testConvertDateIntervalToUnit(): void
+    {
+        $this->assertSame(
+            'day',
+            @EnhancedPeriod::convertDateIntervalToUnit(CarbonInterval::day())
         );
     }
 }
