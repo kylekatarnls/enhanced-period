@@ -3,7 +3,7 @@
 [Carbon](https://carbon.nesbot.com/) mixin to convert `Carbon\CarbonPeriod` to `Spatie\Period\Period` and vice versa.
 
 [![Latest Stable Version](https://poser.pugx.org/cmixin/enhanced-period/v/stable.png)](https://packagist.org/packages/cmixin/enhanced-period)
-[![Build Status](https://travis-ci.org/kylekatarnls/enhanced-period.svg?branch=master)](https://travis-ci.org/kylekatarnls/enhanced-period)
+[![Tests](https://github.com/kylekatarnls/enhanced-period/actions/workflows/tests.yml/badge.svg)](https://github.com/kylekatarnls/enhanced-period/actions/workflows/tests.yml)
 [![Code Climate](https://codeclimate.com/github/kylekatarnls/enhanced-period/badges/gpa.svg)](https://codeclimate.com/github/kylekatarnls/enhanced-period)
 [![Test Coverage](https://codeclimate.com/github/kylekatarnls/enhanced-period/badges/coverage.svg)](https://codeclimate.com/github/kylekatarnls/enhanced-period/coverage)
 [![Issue Count](https://codeclimate.com/github/kylekatarnls/enhanced-period/badges/issue_count.svg)](https://codeclimate.com/github/kylekatarnls/enhanced-period)
