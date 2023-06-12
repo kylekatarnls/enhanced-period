@@ -476,4 +476,12 @@ class EnhancedPeriodTest extends TestCase
             (int) @EnhancedPeriod::convertPrecisionToDateInterval('nope')->totalSeconds
         );
     }
+
+    public function testConvertDateIntervalToUnit(): void
+    {
+        $this->assertSame(
+            'day',
+            @EnhancedPeriod::convertDateIntervalToUnit(CarbonInterval::day())
+        );
+    }
 }
